@@ -5,17 +5,19 @@ import java.util.Date;
 
 public class Earthquake {
 
-    private String mRating;
+    private double mRating;
     private String mCity;
     private long mDate;
+    private String moreInfoUrl;
 
     private String mCityOnly;
     private String mCityDist;
 
-    public Earthquake(String rating, String city, long date){
+    public Earthquake(double rating, String city, long date, String url){
         mRating = rating;
         mCity = city;
         mDate = date;
+        moreInfoUrl = url;
         extractCity();
     }
 
@@ -32,7 +34,7 @@ public class Earthquake {
         }
     }
 
-    public String getRating(){
+    public double getRating(){
         return mRating;
     }
 
@@ -42,6 +44,10 @@ public class Earthquake {
 
     public long getDateMili(){
         return mDate;
+    }
+
+    public String getUrl(){
+        return moreInfoUrl;
     }
 
     public String getDateReg(){
