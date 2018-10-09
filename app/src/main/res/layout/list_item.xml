@@ -21,6 +21,14 @@
         android:layout_height="wrap_content"
         android:text="London"
         android:layout_gravity="center"
+        android:id="@+id/cityDist"/>
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="London"
+        android:layout_gravity="center"
         android:id="@+id/city"/>
 
     <TextView
@@ -30,5 +38,13 @@
         android:text="Feb 2, 2016"
         android:layout_gravity="center_vertical"
         android:id="@+id/date"/>
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="11:00am"
+        android:layout_gravity="center_vertical"
+        android:id="@+id/time"/>
 
 </LinearLayout>
