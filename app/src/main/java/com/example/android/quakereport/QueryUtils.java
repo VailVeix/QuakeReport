@@ -46,7 +46,7 @@ public final class QueryUtils {
     private QueryUtils() {
     }
 
-    public static List<Earthquake> fetchEarthquakeData(String urlString){
+    public static ArrayList<Earthquake> fetchEarthquakeData(String urlString){
         URL url = createURL(urlString);
 
         String jsonResponse = null;
