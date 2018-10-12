@@ -6,14 +6,25 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Helper methods related to requesting and receiving earthquake data from USGS.
  */
 public final class QueryUtils {
+
+    public static final String LOG_TAG = QueryUtils.class.getSimpleName();
 
     /** Sample JSON response for a USGS query */
     private static final String SAMPLE_JSON_RESPONSE = "{\"type\":\"FeatureCollection\",\"metadata\":{\"generated\":1462295443000,\"url\":\"http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2016-01-01&endtime=2016-01-31&minmag=6&limit=10\",\"title\":\"USGS Earthquakes\",\"status\":200,\"api\":\"1.5.2\",\"limit\":10,\"offset\":1,\"count\":10},\"features\":[{\"type\":\"Feature\",\"properties\":{\"mag\":7.2,\"place\":\"88km N of Yelizovo, Russia\",\"time\":1454124312220,\"updated\":1460674294040,\"tz\":720,\"url\":\"http://earthquake.usgs.gov/earthquakes/eventpage/us20004vvx\",\"detail\":\"http://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us20004vvx&format=geojson\",\"felt\":2,\"cdi\":3.4,\"mmi\":5.82,\"alert\":\"green\",\"status\":\"reviewed\",\"tsunami\":1,\"sig\":798,\"net\":\"us\",\"code\":\"20004vvx\",\"ids\":\",at00o1qxho,pt16030050,us20004vvx,gcmt20160130032510,\",\"sources\":\",at,pt,us,gcmt,\",\"types\":\",cap,dyfi,finite-fault,general-link,general-text,geoserve,impact-link,impact-text,losspager,moment-tensor,nearby-cities,origin,phase-data,shakemap,tectonic-summary,\",\"nst\":null,\"dmin\":0.958,\"rms\":1.19,\"gap\":17,\"magType\":\"mww\",\"type\":\"earthquake\",\"title\":\"M 7.2 - 88km N of Yelizovo, Russia\"},\"geometry\":{\"type\":\"Point\",\"coordinates\":[158.5463,53.9776,177]},\"id\":\"us20004vvx\"},\n" +
@@ -35,11 +46,96 @@ public final class QueryUtils {
     private QueryUtils() {
     }
 
+    public static List<Earthquake> fetchEarthquakeData(String urlString){
+        URL url = createURL(urlString);
+
+        String jsonResponse = null;
+        try {
+            jsonResponse = makeHttpRequest(url);
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Error closing input stream", e);
+        }
+
+        ArrayList<Earthquake> earthquakes = extractEarthquakes(jsonResponse);
+
+        return earthquakes;
+    }
+
+    private static String makeHttpRequest(URL url) throws IOException{
+        String jsonResponse = "";
+
+        if(url == null){
+            return null;
+        }
+
+        HttpURLConnection urlConnection = null;
+        InputStream inputStream = null;
+
+        try{
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setReadTimeout(10000);
+            urlConnection.setConnectTimeout(15000);
+            urlConnection.setRequestMethod("GET");
+            urlConnection.connect();
+
+            if(urlConnection.getResponseCode() == 200){
+                inputStream = urlConnection.getInputStream();
+                jsonResponse = readFromStream(inputStream);
+            }
+            else{
+                Log.e(LOG_TAG, "Error response code:" + urlConnection.getResponseCode());
+            }
+        }
+        catch (IOException e){
+            Log.e(LOG_TAG, "Problem retrieving the earthquake JSON results.", e);
+        }
+        finally {
+            if(urlConnection != null){
+                urlConnection.disconnect();
+            }
+            if(inputStream != null){
+                inputStream.close();
+            }
+        }
+
+        return jsonResponse;
+    }
+
+    private static String readFromStream(InputStream stream) throws IOException{
+        StringBuilder output = new StringBuilder();
+
+        if(stream!= null){
+            InputStreamReader inputReader = new InputStreamReader(stream, Charset.forName("UTF-8"));
+            BufferedReader reader = new BufferedReader(inputReader);
+            String line = reader.readLine();
+            while(line != null){
+                output.append(line);
+                line = reader.readLine();
+            }
+
+        }
+
+        return output.toString();
+    }
+
+    public static URL createURL(String urlString){
+        URL url = null;
+
+        try{
+            url = new URL(urlString);
+        }
+        catch (MalformedURLException e){
+            Log.e(LOG_TAG, "Error creating URL.");
+        }
+
+        return url;
+    }
+
     /**
      * Return a list of {@link Earthquake} objects that has been built up from
      * parsing a JSON response.
      */
-    public static ArrayList<Earthquake> extractEarthquakes() {
+    public static ArrayList<Earthquake> extractEarthquakes(String response) {
 
         // Create an empty ArrayList that we can start adding earthquakes to
         ArrayList<Earthquake> earthquakes = new ArrayList<>();
@@ -49,7 +145,7 @@ public final class QueryUtils {
         // Catch the exception so the app doesn't crash, and print the error message to the logs.
         try {
 
-            JSONObject earthquakeObject = new JSONObject(SAMPLE_JSON_RESPONSE);
+            JSONObject earthquakeObject = new JSONObject(response);
             JSONArray earthquakeArray = earthquakeObject.getJSONArray("features");
 
             int i = 0;
